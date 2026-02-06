@@ -4,7 +4,15 @@ from typing import Any
 
 import pymysql
 
-from sql_mcp_server.config import DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_QUERY_TIMEOUT, DB_USER
+from sql_mcp_server.config import (
+    DB_DATABASE,
+    DB_HOST,
+    DB_PASSWORD,
+    DB_PORT,
+    DB_QUERY_TIMEOUT,
+    DB_STATEMENT_TIMEOUT_MS,
+    DB_USER,
+)
 from sql_mcp_server.db.base import DBClient
 
 
@@ -19,6 +27,18 @@ class MySQLClient(DBClient):
             connect_timeout=DB_QUERY_TIMEOUT,
             cursorclass=pymysql.cursors.DictCursor,
         )
+        self._configure_statement_timeout()
+
+    def _configure_statement_timeout(self) -> None:
+        if DB_STATEMENT_TIMEOUT_MS <= 0:
+            return
+
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SET SESSION MAX_EXECUTION_TIME = %s",
+                (DB_STATEMENT_TIMEOUT_MS,),
+            )
+        self._conn.commit()
 
     def execute(self, query: str) -> list[dict[str, Any]]:
         with self._conn.cursor() as cur:

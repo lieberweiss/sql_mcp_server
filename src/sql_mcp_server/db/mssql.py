@@ -5,7 +5,15 @@ from typing import Any
 
 import pyodbc
 
-from sql_mcp_server.config import DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_QUERY_TIMEOUT, DB_USER
+from sql_mcp_server.config import (
+    DB_DATABASE,
+    DB_HOST,
+    DB_PASSWORD,
+    DB_PORT,
+    DB_QUERY_TIMEOUT,
+    DB_STATEMENT_TIMEOUT_SECONDS,
+    DB_USER,
+)
 from sql_mcp_server.db.base import DBClient
 
 
@@ -24,6 +32,9 @@ class MSSQLClient(DBClient):
             f"Encrypt=yes;TrustServerCertificate={trust_server_certificate_str};"
         )
         self._conn = pyodbc.connect(conn_str, timeout=DB_QUERY_TIMEOUT)
+        self._statement_timeout_seconds = (
+            DB_STATEMENT_TIMEOUT_SECONDS if DB_STATEMENT_TIMEOUT_SECONDS > 0 else None
+        )
 
     @staticmethod
     def _resolve_driver() -> str:
@@ -45,6 +56,8 @@ class MSSQLClient(DBClient):
 
     def execute(self, query: str) -> list[dict[str, Any]]:
         cur = self._conn.cursor()
+        if self._statement_timeout_seconds is not None:
+            cur.timeout = self._statement_timeout_seconds
         cur.execute(query)
         columns = [c[0] for c in cur.description]
         rows = cur.fetchall()

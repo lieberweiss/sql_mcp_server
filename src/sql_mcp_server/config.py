@@ -13,6 +13,10 @@ SQLITE_PATH = os.getenv("SQLITE_PATH", "./database.db")
 DB_READ_ONLY = os.getenv("DB_READ_ONLY", "true").lower() == "true"
 DB_MAX_ROWS = int(os.getenv("DB_MAX_ROWS", "100"))
 DB_QUERY_TIMEOUT = int(os.getenv("DB_QUERY_TIMEOUT", "10"))
+DB_STATEMENT_TIMEOUT_MS = int(
+    os.getenv("DB_STATEMENT_TIMEOUT_MS", str(DB_QUERY_TIMEOUT * 1000))
+)
+DB_STATEMENT_TIMEOUT_SECONDS = max((DB_STATEMENT_TIMEOUT_MS + 999) // 1000, 1)
 
 DB_ALLOWED_TABLES = {
     t.strip().lower()

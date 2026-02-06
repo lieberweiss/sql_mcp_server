@@ -115,6 +115,7 @@ The examples below use the "module" entrypoint (Option 2):
 - `DB_READ_ONLY` (optional, default: `true`)
 - `DB_MAX_ROWS` (optional, default: `100`)
 - `DB_QUERY_TIMEOUT` (optional, default: `10` seconds)
+- `DB_STATEMENT_TIMEOUT_MS` (optional, default: `DB_QUERY_TIMEOUT * 1000`; caps statement execution time)
 - `DB_ALLOWED_TABLES` (optional, comma-separated allowlist)
 
 ### SQLite (Windsurf)

@@ -5,7 +5,15 @@ from typing import Any
 import psycopg2
 import psycopg2.extras
 
-from sql_mcp_server.config import DB_DATABASE, DB_HOST, DB_PASSWORD, DB_PORT, DB_QUERY_TIMEOUT, DB_USER
+from sql_mcp_server.config import (
+    DB_DATABASE,
+    DB_HOST,
+    DB_PASSWORD,
+    DB_PORT,
+    DB_QUERY_TIMEOUT,
+    DB_STATEMENT_TIMEOUT_MS,
+    DB_USER,
+)
 from sql_mcp_server.db.base import DBClient
 
 
@@ -19,6 +27,15 @@ class PostgresClient(DBClient):
             password=DB_PASSWORD,
             connect_timeout=DB_QUERY_TIMEOUT,
         )
+        self._configure_statement_timeout()
+
+    def _configure_statement_timeout(self) -> None:
+        if DB_STATEMENT_TIMEOUT_MS <= 0:
+            return
+
+        with self._conn.cursor() as cur:
+            cur.execute("SET statement_timeout = %s", (DB_STATEMENT_TIMEOUT_MS,))
+        self._conn.commit()
 
     def execute(self, query: str) -> list[dict[str, Any]]:
         with self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
