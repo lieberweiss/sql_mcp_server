@@ -47,21 +47,19 @@ class SQLValidator:
             )
 
         stmt = statements[0]
-        if not self._is_select_like(stmt, normalized):
+        is_select_like = self._is_select_like(stmt, normalized)
+
+        self._check_forbidden_keywords(normalized)
+        self._check_tables(normalized)
+
+        if not is_select_like:
             if self._config.read_only:
                 raise MCPError(
                     "Database is in read-only mode",
                     hint="Only SELECT queries are allowed",
                     error_type="ReadOnlyViolation",
                 )
-            raise MCPError(
-                "Only SELECT queries are allowed",
-                hint="Use the run_select tool",
-                error_type="NonSelectNotAllowed",
-            )
-
-        self._check_forbidden_keywords(normalized)
-        self._check_tables(normalized)
+            return SQLValidationResult(query=normalized.rstrip().rstrip(";"), warnings=[])
 
         rewritten, warnings = self._apply_limit(normalized)
         return SQLValidationResult(query=rewritten, warnings=warnings)
