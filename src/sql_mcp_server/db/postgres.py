@@ -33,6 +33,9 @@ class PostgresClient(DBClient):
     def execute(self, query: str) -> list[dict[str, Any]]:
         with self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(query)
+            if cur.description is None:
+                self._conn.commit()
+                return []
             return list(cur.fetchall())
 
     def list_tables(self) -> list[str]:

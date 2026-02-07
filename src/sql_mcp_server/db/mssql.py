@@ -47,6 +47,9 @@ class MSSQLClient(DBClient):
         if self._statement_timeout_seconds is not None:
             cur.timeout = self._statement_timeout_seconds
         cur.execute(query)
+        if cur.description is None:
+            self._conn.commit()
+            return []
         columns = [c[0] for c in cur.description]
         rows = cur.fetchall()
         return [dict(zip(columns, row)) for row in rows]

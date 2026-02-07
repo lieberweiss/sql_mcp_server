@@ -34,6 +34,9 @@ class SQLiteClient(DBClient):
                     time.monotonic() + self._statement_timeout_seconds
                 )
             cur.execute(query)
+            if cur.description is None:
+                self._conn.commit()
+                return []
             rows = cur.fetchall()
             return [dict(r) for r in rows]
         finally:

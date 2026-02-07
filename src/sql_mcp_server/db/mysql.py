@@ -36,6 +36,9 @@ class MySQLClient(DBClient):
     def execute(self, query: str) -> list[dict[str, Any]]:
         with self._conn.cursor() as cur:
             cur.execute(query)
+            if cur.description is None:
+                self._conn.commit()
+                return []
             return list(cur.fetchall())
 
     def list_tables(self) -> list[str]:
