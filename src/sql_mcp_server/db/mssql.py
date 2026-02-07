@@ -5,40 +5,28 @@ from typing import Any
 
 import pyodbc
 
-from sql_mcp_server.config import (
-    DB_DATABASE,
-    DB_HOST,
-    DB_PASSWORD,
-    DB_PORT,
-    DB_QUERY_TIMEOUT,
-    DB_STATEMENT_TIMEOUT_SECONDS,
-    DB_USER,
-)
+from sql_mcp_server.config import ServerConfig
 from sql_mcp_server.db.base import DBClient
 
 
 class MSSQLClient(DBClient):
-    def __init__(self) -> None:
+    def __init__(self, config: ServerConfig) -> None:
+        self._config = config
         driver = self._resolve_driver()
-        trust_server_certificate = (
-            os.getenv("DB_MSSQL_TRUST_SERVER_CERTIFICATE", "false").lower() == "true"
-        )
+        trust_server_certificate = config.mssql_trust_server_certificate
         trust_server_certificate_str = "yes" if trust_server_certificate else "no"
         conn_str = (
             f"DRIVER={{{driver}}};"
-            f"SERVER={DB_HOST},{DB_PORT or 1433};"
-            f"DATABASE={DB_DATABASE};"
-            f"UID={DB_USER};PWD={DB_PASSWORD};"
+            f"SERVER={config.host},{config.port or 1433};"
+            f"DATABASE={config.database};"
+            f"UID={config.user};PWD={config.password};"
             f"Encrypt=yes;TrustServerCertificate={trust_server_certificate_str};"
         )
-        self._conn = pyodbc.connect(conn_str, timeout=DB_QUERY_TIMEOUT)
-        self._statement_timeout_seconds = (
-            DB_STATEMENT_TIMEOUT_SECONDS if DB_STATEMENT_TIMEOUT_SECONDS > 0 else None
-        )
+        self._conn = pyodbc.connect(conn_str, timeout=config.query_timeout)
+        self._statement_timeout_seconds = config.statement_timeout_seconds
 
-    @staticmethod
-    def _resolve_driver() -> str:
-        configured_driver = os.getenv("DB_MSSQL_ODBC_DRIVER")
+    def _resolve_driver(self) -> str:
+        configured_driver = self._config.mssql_odbc_driver or os.getenv("DB_MSSQL_ODBC_DRIVER")
         if configured_driver:
             return configured_driver
 

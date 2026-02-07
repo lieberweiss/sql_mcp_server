@@ -17,6 +17,7 @@ Supported database providers:
 - Forbidden keyword detection
 - Automatic row limiting (`LIMIT` / `TOP`)
 - Optional table allowlist (`DB_ALLOWED_TABLES`)
+- Multi-instance runtime: expose several databases from a single MCP server
 - MCP tools designed for schema exploration and safe querying
 
 ## Project structure
@@ -34,6 +35,16 @@ src/sql_mcp_server/
 ## Configuration
 
 Copy `.env.example` to `.env` and update values.
+
+### Multi-instance setup
+
+Set `MCP_INSTANCES` to a comma-separated list of prefixes (e.g. `MCP_INSTANCES=CRM,ERP`).
+For every prefix, define the expected environment variables by upper-casing the prefix and
+suffixing standard keys: `CRM_DB_PROVIDER`, `CRM_DB_HOST`, etc. Instance identifiers are
+case-insensitive and available to tools via the `instance_id` parameter.
+
+When `MCP_INSTANCES` is omitted, the server exposes a single `default` instance sourced
+directly from the un-prefixed environment variables shown below.
 
 ### SQLite
 
@@ -259,9 +270,12 @@ Optional env fields:
 
 ## MCP tools
 
-- `list_tables`: List accessible tables
-- `describe_table(table: str)`: Describe columns of a table
-- `run_select(query: str)`: Execute a validated, safe SELECT query
+- `list_tables(instance_id?: str)`: List accessible tables for the selected instance
+- `describe_table(table: str, instance_id?: str)`: Columns for a specific table
+- `run_select(query: str, instance_id?: str)`: Execute a validated, safe SELECT query
+
+If `instance_id` is omitted, the tools fall back to the `default` instance. Pass one of the
+registered identifiers (e.g. `crm`, `erp`) to target a specific database configuration.
 
 ## Security notes
 

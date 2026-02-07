@@ -5,7 +5,7 @@ from typing import Optional
 
 import sqlparse
 
-from sql_mcp_server.config import DB_ALLOWED_TABLES, DB_MAX_ROWS, DB_PROVIDER, DB_READ_ONLY
+from sql_mcp_server.config import DEFAULT_CONFIG, ServerConfig
 from sql_mcp_server.errors import MCPError
 
 FORBIDDEN_KEYWORDS = {
@@ -30,6 +30,9 @@ class SQLValidationResult:
 
 
 class SQLValidator:
+    def __init__(self, config: ServerConfig | None = None) -> None:
+        self._config = config or DEFAULT_CONFIG
+
     def validate(self, query: str) -> SQLValidationResult:
         normalized = query.strip()
         if not normalized:
@@ -45,7 +48,7 @@ class SQLValidator:
 
         stmt = statements[0]
         if not self._is_select_like(stmt, normalized):
-            if DB_READ_ONLY:
+            if self._config.read_only:
                 raise MCPError(
                     "Database is in read-only mode",
                     hint="Only SELECT queries are allowed",
@@ -85,7 +88,7 @@ class SQLValidator:
                 )
 
     def _check_tables(self, query: str) -> None:
-        if not DB_ALLOWED_TABLES:
+        if not self._config.allowed_tables:
             return
 
         parsed = sqlparse.parse(query)
@@ -101,11 +104,11 @@ class SQLValidator:
         if not identifiers:
             return
 
-        disallowed = identifiers - DB_ALLOWED_TABLES
+        disallowed = identifiers - self._config.allowed_tables
         if disallowed:
             raise MCPError(
                 f"Access denied to table(s): {', '.join(sorted(disallowed))}",
-                hint=f"Allowed tables: {', '.join(sorted(DB_ALLOWED_TABLES))}",
+                hint=f"Allowed tables: {', '.join(sorted(self._config.allowed_tables))}",
                 error_type="TableNotAllowed",
             )
 
@@ -115,11 +118,12 @@ class SQLValidator:
         if " limit " in q_lower or " top " in q_lower:
             return normalized, []
 
-        if DB_MAX_ROWS <= 0:
+        if self._config.max_rows <= 0:
             return normalized, []
 
-        if DB_PROVIDER == "mssql":
-            rewritten = normalized.replace("SELECT", f"SELECT TOP {DB_MAX_ROWS}", 1)
-            return rewritten, [f"TOP {DB_MAX_ROWS} automatically applied"]
+        if self._config.provider == "mssql":
+            rewritten = normalized.replace("SELECT", f"SELECT TOP {self._config.max_rows}", 1)
+            return rewritten, [f"TOP {self._config.max_rows} automatically applied"]
 
-        return f"{normalized} LIMIT {DB_MAX_ROWS}", [f"LIMIT {DB_MAX_ROWS} automatically applied"]
+        limit = self._config.max_rows
+        return f"{normalized} LIMIT {limit}", [f"LIMIT {limit} automatically applied"]
