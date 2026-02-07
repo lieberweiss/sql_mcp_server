@@ -4,21 +4,16 @@ import sqlite3
 import time
 from typing import Any
 
-from sql_mcp_server.config import (
-    DB_QUERY_TIMEOUT,
-    DB_STATEMENT_TIMEOUT_SECONDS,
-    SQLITE_PATH,
-)
+from sql_mcp_server.config import ServerConfig
 from sql_mcp_server.db.base import DBClient
 
 
 class SQLiteClient(DBClient):
-    def __init__(self) -> None:
-        self._conn = sqlite3.connect(SQLITE_PATH, timeout=DB_QUERY_TIMEOUT)
+    def __init__(self, config: ServerConfig) -> None:
+        self._config = config
+        self._conn = sqlite3.connect(config.sqlite_path, timeout=config.query_timeout)
         self._conn.row_factory = sqlite3.Row
-        self._statement_timeout_seconds = (
-            DB_STATEMENT_TIMEOUT_SECONDS if DB_STATEMENT_TIMEOUT_SECONDS > 0 else None
-        )
+        self._statement_timeout_seconds = config.statement_timeout_seconds
         self._current_query_deadline: float | None = None
         if self._statement_timeout_seconds:
             # Abort long-running queries by polling SQLite's progress handler.
