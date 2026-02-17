@@ -263,7 +263,6 @@ Optional env fields:
         "DB_MSSQL_TRUST_SERVER_CERTIFICATE": "true",
         "DB_READ_ONLY": "true",
         "DB_MAX_ROWS": "100",
-        "DB_QUERY_TIMEOUT": "10",
         "DB_ALLOWED_TABLES": ""
       }
     }
