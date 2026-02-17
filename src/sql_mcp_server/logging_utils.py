@@ -49,7 +49,7 @@ LOG_FILE = LOG_DIR / "server.log"
 QUERIES_LOG_FILE = LOG_DIR / "queries.log"
 
 QUERY_LOGGER_NAME = "sql_mcp_server.queries"
-QUERY_LOG_ENV_VAR = "SQL_MCP_ENABLE_QUERY_LOGS"
+QUERY_LOG_ENV_VAR = "ENABLE_QUERY_LOGS"
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
