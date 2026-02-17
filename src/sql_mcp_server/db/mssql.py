@@ -22,8 +22,7 @@ class MSSQLClient(DBClient):
             f"UID={config.user};PWD={config.password};"
             f"Encrypt=yes;TrustServerCertificate={trust_server_certificate_str};"
         )
-        self._conn = pyodbc.connect(conn_str, timeout=config.query_timeout)
-        self._statement_timeout_seconds = config.statement_timeout_seconds
+        self._conn = pyodbc.connect(conn_str)
 
     def _resolve_driver(self) -> str:
         configured_driver = self._config.mssql_odbc_driver or os.getenv("DB_MSSQL_ODBC_DRIVER")
@@ -44,8 +43,6 @@ class MSSQLClient(DBClient):
 
     def execute(self, query: str) -> list[dict[str, Any]]:
         cur = self._conn.cursor()
-        if self._statement_timeout_seconds is not None:
-            cur.timeout = self._statement_timeout_seconds
         cur.execute(query)
         if cur.description is None:
             self._conn.commit()
