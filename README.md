@@ -94,6 +94,8 @@ DB_READ_ONLY=true
 DB_MAX_ROWS=100
 ```
 
+> ℹ️ Contrairement aux pilotes PostgreSQL/MySQL, le client MSSQL n'applique pas de `DB_QUERY_TIMEOUT`/`DB_STATEMENT_TIMEOUT_MS`. Les délais restent donc ceux par défaut du serveur ou de pyodbc.
+
 ## Install
 
 ```bash
