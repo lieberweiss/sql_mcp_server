@@ -94,7 +94,8 @@ DB_READ_ONLY=true
 DB_MAX_ROWS=100
 ```
 
-> ℹ️ Contrairement aux pilotes PostgreSQL/MySQL, le client MSSQL n'applique pas de `DB_QUERY_TIMEOUT`/`DB_STATEMENT_TIMEOUT_MS`. Les délais restent donc ceux par défaut du serveur ou de pyodbc.
+> ℹ️ Unlike the PostgreSQL/MySQL drivers, the MSSQL client does not honor `DB_QUERY_TIMEOUT` / `DB_STATEMENT_TIMEOUT_MS`, so execution timeouts fall back to the server or pyodbc defaults.
+> ⚠️ Make sure to install a SQL Server ODBC driver (e.g., `msodbcsql17` / `msodbcsql18`) before starting the MSSQL instance, otherwise `pyodbc` cannot establish the connection.
 
 ## Install
 
@@ -130,6 +131,7 @@ The examples below use the "module" entrypoint (Option 2):
 - `DB_QUERY_TIMEOUT` (optional, default: `10` seconds)
 - `DB_STATEMENT_TIMEOUT_MS` (optional, default: `DB_QUERY_TIMEOUT * 1000`; caps statement execution time)
 - `DB_ALLOWED_TABLES` (optional, comma-separated allowlist)
+- `DB_ALLOW_ALTER` (optional, default: `false`; when `true`, the validator lets `ALTER` statements pass so you can evolve schemas without fully disabling keyword protection)
 - `ENABLE_QUERY_LOGS` (optional, default: `false`; when enabled, SQL queries are logged to `logs/queries.log` with daily rotation)
 
 ### SQLite (Windsurf)
