@@ -50,7 +50,7 @@ def run_select(query: str, instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": instance_id or "default",
                 "error_type": exc.error_type,
-                "message": exc.message,
+                "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
             },
         )
@@ -59,7 +59,7 @@ def run_select(query: str, instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": instance_id or "default",
                 "error_type": exc.error_type,
-                "message": exc.message,
+                "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
             },
         )
@@ -121,7 +121,7 @@ def run_query(query: str, instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": instance_id or "default",
                 "error_type": exc.error_type,
-                "message": exc.message,
+                "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
             },
         )
@@ -130,7 +130,7 @@ def run_query(query: str, instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": instance_id or "default",
                 "error_type": exc.error_type,
-                "message": exc.message,
+                "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
             },
         )

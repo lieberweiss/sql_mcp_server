@@ -30,7 +30,7 @@ def list_tables(instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": instance_id or "default",
                 "error_type": exc.error_type,
-                "message": exc.message,
+                "error_message": exc.message,
             },
         )
         return exc.to_dict()
@@ -60,7 +60,7 @@ def describe_table(table: str, instance_id: str | None = None) -> dict:
                 "instance_id": instance_id or "default",
                 "table": table,
                 "error_type": exc.error_type,
-                "message": exc.message,
+                "error_message": exc.message,
             },
         )
         return exc.to_dict()
