@@ -55,3 +55,6 @@ class SQLiteClient(DBClient):
     def describe_table(self, table: str) -> list[dict[str, Any]]:
         safe = table.replace('"', '""')
         return self.execute(f'PRAGMA table_info("{safe}")')
+
+    def close(self) -> None:
+        self._conn.close()

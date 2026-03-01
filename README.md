@@ -95,7 +95,7 @@ DB_READ_ONLY=true
 DB_MAX_ROWS=100
 ```
 
-> ℹ️ Unlike the PostgreSQL/MySQL drivers, the MSSQL client does not honor `DB_QUERY_TIMEOUT` / `DB_STATEMENT_TIMEOUT_MS`, so execution timeouts fall back to the server or pyodbc defaults.
+> ℹ️ The MSSQL client applies `DB_QUERY_TIMEOUT` via the pyodbc connection timeout when provided; ensure the driver you select supports this property.
 > ⚠️ Make sure to install a SQL Server ODBC driver (e.g., `msodbcsql17` / `msodbcsql18`) before starting the MSSQL instance, otherwise `pyodbc` cannot establish the connection.
 
 ## Install
@@ -133,7 +133,7 @@ The examples below use the "module" entrypoint (Option 2):
 - `DB_STATEMENT_TIMEOUT_MS` (optional, default: `DB_QUERY_TIMEOUT * 1000`; caps statement execution time)
 - `DB_ALLOWED_TABLES` (optional, comma-separated allowlist)
 - `DB_ALLOW_ALTER` (optional, default: `false`; when `true`, the validator lets `ALTER` statements pass so you can evolve schemas without fully disabling keyword protection)
-- `DB_ALLOW_DROP` (optional, default: `true`; set to `false` to block `DROP` statements, or leave enabled when you need controlled schema cleanup)
+- `DB_ALLOW_DROP` (optional, default: `false`; set to `true` only when you intentionally need to run `DROP` statements)
 - `ENABLE_QUERY_LOGS` (optional, default: `false`; when enabled, SQL queries are logged to `logs/queries.log` with daily rotation)
 
 ### SQLite (Windsurf)
@@ -279,9 +279,9 @@ Optional env fields:
 - `list_tables(instance_id?: str)`: List accessible tables for the selected instance
 - `describe_table(table: str, instance_id?: str)`: Columns for a specific table
 - `run_select(query: str, instance_id?: str)`: Execute a validated, safe SELECT query
+- `run_query(query: str, instance_id?: str)`: Execute a validated query (write statements allowed when the instance is not read-only)
 
-If `instance_id` is omitted, the tools fall back to the `default` instance. Pass one of the
-registered identifiers (e.g. `crm`, `erp`) to target a specific database configuration.
+When embedding the server, call `sql_mcp_server.instances.shutdown_instance_registry()` during teardown to close database connections cleanly.
 
 ## Security notes
 

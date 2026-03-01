@@ -15,6 +15,9 @@ class InstanceContext:
     db: DBClient
     validator: SQLValidator
 
+    def close(self) -> None:
+        self.db.close()
+
 
 class InstanceRegistry:
     def __init__(self) -> None:
@@ -48,6 +51,14 @@ class InstanceRegistry:
             )
         return self._instances[key]
 
+    def shutdown(self) -> None:
+        for instance in self._instances.values():
+            try:
+                instance.close()
+            except Exception:
+                pass
+        self._instances.clear()
+
 
 _registry: InstanceRegistry | None = None
 
@@ -57,3 +68,11 @@ def get_instance_registry() -> InstanceRegistry:
     if _registry is None:
         _registry = InstanceRegistry()
     return _registry
+
+
+def shutdown_instance_registry() -> None:
+    global _registry
+    if _registry is None:
+        return
+    _registry.shutdown()
+    _registry = None

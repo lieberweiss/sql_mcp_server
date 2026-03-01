@@ -23,6 +23,8 @@ class MSSQLClient(DBClient):
             f"Encrypt=yes;TrustServerCertificate={trust_server_certificate_str};"
         )
         self._conn = pyodbc.connect(conn_str)
+        if config.query_timeout > 0:
+            self._conn.timeout = config.query_timeout
 
     def _resolve_driver(self) -> str:
         configured_driver = self._config.mssql_odbc_driver or os.getenv("DB_MSSQL_ODBC_DRIVER")
@@ -70,3 +72,6 @@ class MSSQLClient(DBClient):
             ),
             (table,),
         )
+
+    def close(self) -> None:
+        self._conn.close()

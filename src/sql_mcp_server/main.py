@@ -2,6 +2,7 @@ import logging
 
 from fastmcp import FastMCP
 
+from sql_mcp_server.instances import shutdown_instance_registry
 from sql_mcp_server.logging_utils import setup_logging
 from sql_mcp_server.tools.query import run_query, run_select
 from sql_mcp_server.tools.schema import describe_table, list_tables
@@ -25,6 +26,8 @@ def run() -> None:
     except BaseException:
         logger.exception("sql-mcp-server crashed")
         raise
+    finally:
+        shutdown_instance_registry()
 
 
 if __name__ == "__main__":

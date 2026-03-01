@@ -50,3 +50,6 @@ class MySQLClient(DBClient):
     def describe_table(self, table: str) -> list[dict[str, Any]]:
         escaped = table.replace("`", "``")
         return self.execute(f"DESCRIBE `{escaped}`")
+
+    def close(self) -> None:
+        self._conn.close()

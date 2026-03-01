@@ -18,3 +18,7 @@ class DBClient(ABC):
     @abstractmethod
     def describe_table(self, table: str) -> list[dict[str, Any]]:
         raise NotImplementedError
+
+    @abstractmethod
+    def close(self) -> None:
+        raise NotImplementedError
