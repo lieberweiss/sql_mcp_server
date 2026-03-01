@@ -15,6 +15,7 @@ Supported database providers:
 - Read-only mode (`DB_READ_ONLY=true`) enforced before execution
 - Single statement enforcement
 - Forbidden keyword detection
+- Granular opt-in for destructive statements (e.g. allow `DROP` via `DB_ALLOW_DROP=true`)
 - Automatic row limiting (`LIMIT` / `TOP`)
 - Optional table allowlist (`DB_ALLOWED_TABLES`)
 - Multi-instance runtime: expose several databases from a single MCP server
@@ -132,6 +133,7 @@ The examples below use the "module" entrypoint (Option 2):
 - `DB_STATEMENT_TIMEOUT_MS` (optional, default: `DB_QUERY_TIMEOUT * 1000`; caps statement execution time)
 - `DB_ALLOWED_TABLES` (optional, comma-separated allowlist)
 - `DB_ALLOW_ALTER` (optional, default: `false`; when `true`, the validator lets `ALTER` statements pass so you can evolve schemas without fully disabling keyword protection)
+- `DB_ALLOW_DROP` (optional, default: `true`; set to `false` to block `DROP` statements, or leave enabled when you need controlled schema cleanup)
 - `ENABLE_QUERY_LOGS` (optional, default: `false`; when enabled, SQL queries are logged to `logs/queries.log` with daily rotation)
 
 ### SQLite (Windsurf)

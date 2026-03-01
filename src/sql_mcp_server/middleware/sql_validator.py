@@ -80,6 +80,8 @@ class SQLValidator:
         forbidden = set(FORBIDDEN_KEYWORDS)
         if self._config.allow_alter:
             forbidden.discard("ALTER")
+        if self._config.allow_drop:
+            forbidden.discard("DROP")
         for kw in forbidden:
             if kw in upper:
                 raise MCPError(

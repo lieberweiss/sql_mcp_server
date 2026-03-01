@@ -24,6 +24,7 @@ class ServerConfig:
     mssql_odbc_driver: str | None
     mssql_trust_server_certificate: bool
     allow_alter: bool
+    allow_drop: bool
 
     @property
     def statement_timeout_seconds(self) -> int | None:
@@ -106,6 +107,7 @@ def load_config(
             "DB_MSSQL_TRUST_SERVER_CERTIFICATE", False
         ),
         allow_alter=_get_bool("DB_ALLOW_ALTER", False),
+        allow_drop=_get_bool("DB_ALLOW_DROP", True),
     )
 
 
