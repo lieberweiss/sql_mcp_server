@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Any, Sequence
 
 import pyodbc
 
@@ -41,9 +41,11 @@ class MSSQLClient(DBClient):
 
         return "ODBC Driver 18 for SQL Server"
 
-    def execute(self, query: str) -> list[dict[str, Any]]:
+    def execute(
+        self, query: str, params: Sequence[Any] | None = None
+    ) -> list[dict[str, Any]]:
         cur = self._conn.cursor()
-        cur.execute(query)
+        cur.execute(query, params or ())
         if cur.description is None:
             self._conn.commit()
             return []
@@ -63,7 +65,8 @@ class MSSQLClient(DBClient):
                 [
                     "SELECT COLUMN_NAME, DATA_TYPE",
                     "FROM INFORMATION_SCHEMA.COLUMNS",
-                    f"WHERE TABLE_NAME = '{table}'",
+                    "WHERE TABLE_NAME = ?",
                 ]
-            )
+            ),
+            (table,),
         )

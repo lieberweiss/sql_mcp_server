@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Sequence
 
 
 class DBClient(ABC):
     @abstractmethod
-    def execute(self, query: str) -> list[dict[str, Any]]:
+    def execute(
+        self, query: str, params: Sequence[Any] | None = None
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError
 
     @abstractmethod

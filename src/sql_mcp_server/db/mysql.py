@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 import pymysql
 
@@ -33,9 +33,11 @@ class MySQLClient(DBClient):
             )
         self._conn.commit()
 
-    def execute(self, query: str) -> list[dict[str, Any]]:
+    def execute(
+        self, query: str, params: Sequence[Any] | None = None
+    ) -> list[dict[str, Any]]:
         with self._conn.cursor() as cur:
-            cur.execute(query)
+            cur.execute(query, params or None)
             if cur.description is None:
                 self._conn.commit()
                 return []
@@ -46,4 +48,5 @@ class MySQLClient(DBClient):
         return [list(r.values())[0] for r in rows]
 
     def describe_table(self, table: str) -> list[dict[str, Any]]:
-        return self.execute(f"DESCRIBE {table}")
+        escaped = table.replace("`", "``")
+        return self.execute(f"DESCRIBE `{escaped}`")

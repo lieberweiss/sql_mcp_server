@@ -107,7 +107,7 @@ def load_config(
             "DB_MSSQL_TRUST_SERVER_CERTIFICATE", False
         ),
         allow_alter=_get_bool("DB_ALLOW_ALTER", False),
-        allow_drop=_get_bool("DB_ALLOW_DROP", True),
+        allow_drop=_get_bool("DB_ALLOW_DROP", False),
     )
 
 

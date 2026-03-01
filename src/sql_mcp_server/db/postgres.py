@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Sequence
 
 import psycopg2
 import psycopg2.extras
@@ -30,9 +30,11 @@ class PostgresClient(DBClient):
             cur.execute("SET statement_timeout = %s", (self._config.statement_timeout_ms,))
         self._conn.commit()
 
-    def execute(self, query: str) -> list[dict[str, Any]]:
+    def execute(
+        self, query: str, params: Sequence[Any] | None = None
+    ) -> list[dict[str, Any]]:
         with self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(query)
+            cur.execute(query, params or None)
             if cur.description is None:
                 self._conn.commit()
                 return []
@@ -50,7 +52,9 @@ class PostgresClient(DBClient):
                 [
                     "SELECT column_name, data_type",
                     "FROM information_schema.columns",
-                    f"WHERE table_name = '{table}'",
+                    "WHERE table_schema = 'public'",
+                    "  AND table_name = %s",
                 ]
-            )
+            ),
+            (table,),
         )

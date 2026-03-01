@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import time
-from typing import Any
+from typing import Any, Sequence
 
 from sql_mcp_server.config import ServerConfig
 from sql_mcp_server.db.base import DBClient
@@ -26,14 +26,19 @@ class SQLiteClient(DBClient):
             return 1
         return 0
 
-    def execute(self, query: str) -> list[dict[str, Any]]:
+    def execute(
+        self, query: str, params: Sequence[Any] | None = None
+    ) -> list[dict[str, Any]]:
         cur = self._conn.cursor()
         try:
             if self._statement_timeout_seconds:
                 self._current_query_deadline = (
                     time.monotonic() + self._statement_timeout_seconds
                 )
-            cur.execute(query)
+            if params:
+                cur.execute(query, params)
+            else:
+                cur.execute(query)
             if cur.description is None:
                 self._conn.commit()
                 return []
@@ -48,4 +53,5 @@ class SQLiteClient(DBClient):
         return [r["name"] for r in rows]
 
     def describe_table(self, table: str) -> list[dict[str, Any]]:
-        return self.execute(f"PRAGMA table_info({table})")
+        safe = table.replace('"', '""')
+        return self.execute(f'PRAGMA table_info("{safe}")')

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 import sqlparse
+from sqlparse import tokens as T
+from sqlparse.sql import Identifier, IdentifierList, TokenList
 
 from sql_mcp_server.config import DEFAULT_CONFIG, ServerConfig
 from sql_mcp_server.errors import MCPError
@@ -27,6 +29,7 @@ FORBIDDEN_KEYWORDS = {
 class SQLValidationResult:
     query: str
     warnings: list[str]
+    is_select: bool
 
 
 class SQLValidator:
@@ -50,7 +53,7 @@ class SQLValidator:
         is_select_like = self._is_select_like(stmt, normalized)
 
         self._check_forbidden_keywords(normalized)
-        self._check_tables(normalized)
+        self._check_tables(stmt)
 
         if not is_select_like:
             if self._config.read_only:
@@ -59,10 +62,14 @@ class SQLValidator:
                     hint="Only SELECT queries are allowed",
                     error_type="ReadOnlyViolation",
                 )
-            return SQLValidationResult(query=normalized.rstrip().rstrip(";"), warnings=[])
+            return SQLValidationResult(
+                query=normalized.rstrip().rstrip(";"),
+                warnings=[],
+                is_select=False,
+            )
 
         rewritten, warnings = self._apply_limit(normalized)
-        return SQLValidationResult(query=rewritten, warnings=warnings)
+        return SQLValidationResult(query=rewritten, warnings=warnings, is_select=True)
 
     def _is_select_like(self, stmt, raw: str) -> bool:
         stmt_type = (stmt.get_type() or "").upper()
@@ -90,20 +97,11 @@ class SQLValidator:
                     error_type="ForbiddenKeyword",
                 )
 
-    def _check_tables(self, query: str) -> None:
+    def _check_tables(self, statement: TokenList) -> None:
         if not self._config.allowed_tables:
             return
 
-        parsed = sqlparse.parse(query)
-        if not parsed:
-            return
-
-        identifiers = {
-            token.value.lower()
-            for token in parsed[0].tokens
-            if token.ttype is None and token.value.isidentifier()
-        }
-
+        identifiers = self._extract_table_identifiers(statement)
         if not identifiers:
             return
 
@@ -114,6 +112,50 @@ class SQLValidator:
                 hint=f"Allowed tables: {', '.join(sorted(self._config.allowed_tables))}",
                 error_type="TableNotAllowed",
             )
+
+    def _extract_table_identifiers(self, statement: TokenList) -> set[str]:
+        identifiers: set[str] = set()
+        for idx, token in enumerate(statement.tokens):
+            if token.is_group:
+                identifiers.update(self._extract_table_identifiers(token))
+
+            if not token.ttype:
+                continue
+
+            if token.ttype not in T.Keyword:
+                continue
+
+            normalized = token.normalized.upper()
+            if normalized == "FROM" or "JOIN" in normalized or normalized in {"UPDATE", "INTO", "DELETE"}:
+                _, next_token = statement.token_next(idx, skip_ws=True, skip_cm=True)
+                if next_token is None:
+                    continue
+                identifiers.update(self._identifiers_from_token(next_token))
+        return identifiers
+
+    def _identifiers_from_token(self, token) -> set[str]:
+        names: set[str] = set()
+        if isinstance(token, IdentifierList):
+            for identifier in token.get_identifiers():
+                names.update(self._identifiers_from_token(identifier))
+            return names
+
+        if isinstance(token, Identifier):
+            real_name = token.get_real_name() or token.get_name()
+            if real_name:
+                names.add(real_name.lower())
+            if token.is_group:
+                names.update(self._extract_table_identifiers(token))
+            return names
+
+        if token.is_group:
+            names.update(self._extract_table_identifiers(token))
+            return names
+
+        value = token.value.strip("`\" ")
+        if value:
+            names.add(value.lower())
+        return names
 
     def _apply_limit(self, query: str) -> tuple[str, list[str]]:
         normalized = query.rstrip().rstrip(";")
