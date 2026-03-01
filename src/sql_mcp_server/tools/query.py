@@ -34,7 +34,7 @@ def _execute_query(
 ) -> dict:
     started = time.monotonic()
     tool_name = "run_select" if expected_select else "run_query"
-    token = api_key or os.getenv("MCP_TOKEN")
+    token = api_key or os.getenv("API_KEY")
     principal = None
     try:
         principal = authorize(token, ["r"] if expected_select else ["w"])

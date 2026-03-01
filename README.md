@@ -297,7 +297,7 @@ When embedding the server, call `sql_mcp_server.instances.shutdown_instance_regi
 - Enable authentication by providing a `tokens.txt` file (by default located at the project root) with one `username:token:scopes` line per user.
 - `list_tables` and `describe_table` require the `r` scope.
 - `run_select` requires `r`. `run_query` requires `w` and will also demand `a`/`d` whenever the statement contains ALTER or DROP operations allowed by the instance config.
-- Pass the token through the `api_key` parameter of each MCP tool call (or define `MCP_TOKEN` in the client environment so FastMCP injects it automatically).
+- Pass the token through the `api_key` parameter of each MCP tool call (or define `API_KEY` in the client environment so FastMCP injects it automatically).
 - Use `python scripts/generate_api_key.py <username> --scopes rwad` to append entries to `tokens.txt` (use `--file` to target another file or `--stdout` to print without writing). Remove a user with `python scripts/remove_api_key.py <username>`.
 
 ## Security notes
