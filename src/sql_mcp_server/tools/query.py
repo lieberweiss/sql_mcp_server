@@ -4,7 +4,11 @@ import time
 
 from sql_mcp_server.errors import MCPError
 from sql_mcp_server.instances import get_instance_registry
-from sql_mcp_server.logging_utils import get_logger, get_query_logger
+from sql_mcp_server.logging_utils import (
+    get_logger,
+    get_query_logger,
+    render_query_logging_metadata,
+)
 
 _registry = get_instance_registry()
 _logger = get_logger()
@@ -31,7 +35,10 @@ def _execute_query(
         )
         _query_logger.info(
             "query received",
-            extra={"instance_id": instance_id or "default", "query": query},
+            extra={
+                "instance_id": instance_id or "default",
+                **render_query_logging_metadata(query),
+            },
         )
         context = _registry.get(instance_id)
         validated = context.validator.validate(query)
@@ -58,6 +65,7 @@ def _execute_query(
                 "instance_id": context.config.instance_id,
                 "row_count": len(rows),
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                **render_query_logging_metadata(query),
             },
         )
         return response
@@ -78,6 +86,7 @@ def _execute_query(
                 "error_type": exc.error_type,
                 "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                **render_query_logging_metadata(query),
             },
         )
         return exc.to_dict()
@@ -94,6 +103,7 @@ def _execute_query(
             extra={
                 "instance_id": instance_id or "default",
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                **render_query_logging_metadata(query),
             },
         )
         raise

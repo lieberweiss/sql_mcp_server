@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
+from typing import Dict
 
 
 class _ExtraAppendingFormatter(logging.Formatter):
@@ -48,8 +50,10 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "server.log"
 QUERIES_LOG_FILE = LOG_DIR / "queries.log"
 
+LOG_LEVEL_ENV_VAR = "SQL_MCP_LOG_LEVEL"
 QUERY_LOGGER_NAME = "sql_mcp_server.queries"
 QUERY_LOG_ENV_VAR = "ENABLE_QUERY_LOGS"
+QUERY_BODY_ENV_VAR = "LOG_QUERY_BODIES"
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
@@ -64,18 +68,46 @@ def _env_flag(name: str, default: bool = False) -> bool:
     return default
 
 
-def setup_logging(level: int = logging.INFO) -> logging.Logger:
+def _log_level_from_env(default: int = logging.INFO) -> int:
+    raw = os.getenv(LOG_LEVEL_ENV_VAR)
+    if not raw:
+        return default
+    candidate = raw.strip().upper()
+    return getattr(logging, candidate, default)
+
+
+def _secure_file(path: Path) -> None:
+    try:
+        path.chmod(0o600)
+    except PermissionError:
+        pass
+    except OSError:
+        pass
+
+
+class _SecureTimedRotatingFileHandler(TimedRotatingFileHandler):
+    def _open(self):  # type: ignore[override]
+        stream = super()._open()
+        _secure_file(Path(self.baseFilename))
+        return stream
+
+    def rotate(self, source, dest):  # type: ignore[override]
+        super().rotate(source, dest)
+        _secure_file(Path(dest))
+
+
+def setup_logging(level: int | None = None) -> logging.Logger:
     logger = logging.getLogger("sql_mcp_server")
     if logger.handlers:
         return logger
 
-    logger.setLevel(level)
+    logger.setLevel(level or _log_level_from_env())
 
     formatter = _ExtraAppendingFormatter(
         "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
     )
 
-    file_handler = TimedRotatingFileHandler(
+    file_handler = _SecureTimedRotatingFileHandler(
         LOG_FILE,
         when="midnight",
         interval=1,
@@ -99,7 +131,7 @@ def get_logger() -> logging.Logger:
     return setup_logging()
 
 
-def setup_query_logging(level: int = logging.INFO) -> logging.Logger:
+def setup_query_logging(level: int | None = None) -> logging.Logger:
     logger = logging.getLogger(QUERY_LOGGER_NAME)
     if logger.handlers:
         return logger
@@ -110,13 +142,13 @@ def setup_query_logging(level: int = logging.INFO) -> logging.Logger:
         logger.propagate = False
         return logger
 
-    logger.setLevel(level)
+    logger.setLevel(level or _log_level_from_env())
 
     formatter = _ExtraAppendingFormatter(
         "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
     )
 
-    file_handler = TimedRotatingFileHandler(
+    file_handler = _SecureTimedRotatingFileHandler(
         QUERIES_LOG_FILE,
         when="midnight",
         interval=1,
@@ -133,3 +165,17 @@ def setup_query_logging(level: int = logging.INFO) -> logging.Logger:
 
 def get_query_logger() -> logging.Logger:
     return setup_query_logging()
+
+
+_QUERY_BODY_LOGGING = _env_flag(QUERY_BODY_ENV_VAR, default=False)
+
+
+def render_query_logging_metadata(query: str) -> Dict[str, object]:
+    digest = hashlib.sha256(query.encode("utf-8", "ignore")).hexdigest()
+    metadata: Dict[str, object] = {
+        "query_hash": digest,
+        "query_length": len(query),
+    }
+    if _QUERY_BODY_LOGGING:
+        metadata["query"] = query
+    return metadata

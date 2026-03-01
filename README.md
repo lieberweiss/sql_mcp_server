@@ -134,7 +134,9 @@ The examples below use the "module" entrypoint (Option 2):
 - `DB_ALLOWED_TABLES` (optional, comma-separated allowlist)
 - `DB_ALLOW_ALTER` (optional, default: `false`; when `true`, the validator lets `ALTER` statements pass so you can evolve schemas without fully disabling keyword protection)
 - `DB_ALLOW_DROP` (optional, default: `false`; set to `true` only when you intentionally need to run `DROP` statements)
-- `ENABLE_QUERY_LOGS` (optional, default: `false`; when enabled, SQL queries are logged to `logs/queries.log` with daily rotation)
+- `ENABLE_QUERY_LOGS` (optional, default: `false`; when enabled, SQL metadata is logged to `logs/queries.log` with daily rotation)
+- `LOG_QUERY_BODIES` (optional, default: `false`; when `true`, full SQL text is logged in addition to the hashed metadata—keep disabled in production)
+- `SQL_MCP_LOG_LEVEL` (optional, default: `INFO`; override to reduce verbosity in production, e.g. `WARNING`)
 
 ### SQLite (Windsurf)
 
@@ -282,6 +284,12 @@ Optional env fields:
 - `run_query(query: str, instance_id?: str)`: Execute a validated query (write statements allowed when the instance is not read-only)
 
 When embedding the server, call `sql_mcp_server.instances.shutdown_instance_registry()` during teardown to close database connections cleanly.
+
+### Logging & privacy
+
+- Log files live in `logs/` and are rotated daily; they are created with `0600` permissions to avoid accidental exposure.
+- Query logs store only query length and a SHA-256 hash by défaut; enable them via `ENABLE_QUERY_LOGS=true`, puis activez `LOG_QUERY_BODIES=true` uniquement si nécessaire pour le débogage.
+- Ajustez `SQL_MCP_LOG_LEVEL` pour limiter la verbosité en production.
 
 ## Security notes
 
