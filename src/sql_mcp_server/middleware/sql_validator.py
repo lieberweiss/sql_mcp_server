@@ -30,6 +30,7 @@ class SQLValidationResult:
     query: str
     warnings: list[str]
     is_select: bool
+    required_scopes: set[str]
 
 
 class SQLValidator:
@@ -51,6 +52,7 @@ class SQLValidator:
 
         stmt = statements[0]
         is_select_like = self._is_select_like(stmt, normalized)
+        required_scopes = self._required_scopes(normalized, is_select_like)
 
         self._check_forbidden_keywords(normalized)
         self._check_tables(stmt)
@@ -66,10 +68,16 @@ class SQLValidator:
                 query=normalized.rstrip().rstrip(";"),
                 warnings=[],
                 is_select=False,
+                required_scopes=required_scopes,
             )
 
         rewritten, warnings = self._apply_limit(normalized)
-        return SQLValidationResult(query=rewritten, warnings=warnings, is_select=True)
+        return SQLValidationResult(
+            query=rewritten,
+            warnings=warnings,
+            is_select=True,
+            required_scopes=required_scopes,
+        )
 
     def _is_select_like(self, stmt, raw: str) -> bool:
         stmt_type = (stmt.get_type() or "").upper()
@@ -156,6 +164,15 @@ class SQLValidator:
         if value:
             names.add(value.lower())
         return names
+
+    def _required_scopes(self, query: str, is_select_like: bool) -> set[str]:
+        scopes: set[str] = {"r"} if is_select_like else {"w"}
+        upper = query.upper()
+        if self._config.allow_drop and "DROP" in upper:
+            scopes.add("d")
+        if self._config.allow_alter and "ALTER" in upper:
+            scopes.add("a")
+        return scopes
 
     def _apply_limit(self, query: str) -> tuple[str, list[str]]:
         normalized = query.rstrip().rstrip(";")

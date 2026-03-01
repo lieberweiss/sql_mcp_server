@@ -11,6 +11,7 @@ build/
 .env
 .logs/
 logs/
+tokens.txt
 .vscode/
 .idea/
 .venv/

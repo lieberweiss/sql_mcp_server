@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import os
 import time
 
+from sql_mcp_server.auth import authorize, ensure_scopes
 from sql_mcp_server.errors import MCPError
 from sql_mcp_server.instances import get_instance_registry
 from sql_mcp_server.logging_utils import (
@@ -15,23 +17,33 @@ _logger = get_logger()
 _query_logger = get_query_logger()
 
 
-def run_select(query: str, instance_id: str | None = None) -> dict:
-    return _execute_query(query, instance_id, expected_select=True)
+def run_select(
+    query: str, instance_id: str | None = None, api_key: str | None = None
+) -> dict:
+    return _execute_query(query, instance_id, expected_select=True, api_key=api_key)
 
 
-def run_query(query: str, instance_id: str | None = None) -> dict:
-    return _execute_query(query, instance_id, expected_select=False)
+def run_query(
+    query: str, instance_id: str | None = None, api_key: str | None = None
+) -> dict:
+    return _execute_query(query, instance_id, expected_select=False, api_key=api_key)
 
 
 def _execute_query(
-    query: str, instance_id: str | None, expected_select: bool
+    query: str, instance_id: str | None, expected_select: bool, api_key: str | None
 ) -> dict:
     started = time.monotonic()
     tool_name = "run_select" if expected_select else "run_query"
+    token = api_key or os.getenv("MCP_TOKEN")
+    principal = None
     try:
+        principal = authorize(token, ["r"] if expected_select else ["w"])
         _logger.info(
             f"{tool_name} received",
-            extra={"instance_id": instance_id or "default"},
+            extra={
+                "instance_id": instance_id or "default",
+                "principal": principal.username,
+            },
         )
         _query_logger.info(
             "query received",
@@ -42,6 +54,7 @@ def _execute_query(
         )
         context = _registry.get(instance_id)
         validated = context.validator.validate(query)
+        ensure_scopes(principal, validated.required_scopes)
         if expected_select and not validated.is_select:
             raise MCPError(
                 "Only SELECT statements are allowed in run_select",
@@ -57,6 +70,7 @@ def _execute_query(
                 "row_count": len(rows),
                 "warnings": validated.warnings,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "principal": principal.username,
             },
         )
         _query_logger.info(
@@ -66,6 +80,7 @@ def _execute_query(
                 "row_count": len(rows),
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
                 **render_query_logging_metadata(query),
+                "principal": principal.username,
             },
         )
         return response
@@ -77,6 +92,7 @@ def _execute_query(
                 "error_type": exc.error_type,
                 "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "principal": principal.username if principal else "anonymous",
             },
         )
         _query_logger.warning(
@@ -87,6 +103,7 @@ def _execute_query(
                 "error_message": exc.message,
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
                 **render_query_logging_metadata(query),
+                "principal": principal.username if principal else "anonymous",
             },
         )
         return exc.to_dict()
@@ -96,6 +113,7 @@ def _execute_query(
             extra={
                 "instance_id": instance_id or "default",
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
+                "principal": principal.username if principal else "anonymous",
             },
         )
         _query_logger.exception(
@@ -104,6 +122,7 @@ def _execute_query(
                 "instance_id": instance_id or "default",
                 "duration_ms": round((time.monotonic() - started) * 1000, 2),
                 **render_query_logging_metadata(query),
+                "principal": principal.username if principal else "anonymous",
             },
         )
         raise

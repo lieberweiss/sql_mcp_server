@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from sql_mcp_server.auth import authorize
 from sql_mcp_server.errors import MCPError
 from sql_mcp_server.instances import InstanceContext, get_instance_registry
 from sql_mcp_server.logging_utils import get_logger
@@ -44,11 +45,15 @@ def _assert_table_allowed(
     return catalog.get(lower_normalized, normalized)
 
 
-def list_tables(instance_id: str | None = None) -> dict:
+def list_tables(instance_id: str | None = None, api_key: str | None = None) -> dict:
     try:
+        principal = authorize(api_key, ["r"])
         _logger.info(
             "list_tables received",
-            extra={"instance_id": instance_id or "default"},
+            extra={
+                "instance_id": instance_id or "default",
+                "principal": principal.username,
+            },
         )
         context = _registry.get(instance_id)
         tables = context.db.list_tables()
@@ -57,6 +62,7 @@ def list_tables(instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": context.config.instance_id,
                 "table_count": len(tables),
+                "principal": principal.username,
             },
         )
         return {"tables": tables}
@@ -65,6 +71,7 @@ def list_tables(instance_id: str | None = None) -> dict:
             "list_tables failed",
             extra={
                 "instance_id": instance_id or "default",
+                "principal": principal.username if 'principal' in locals() else "anonymous",
                 "error_type": exc.error_type,
                 "error_message": exc.message,
             },
@@ -72,11 +79,18 @@ def list_tables(instance_id: str | None = None) -> dict:
         return exc.to_dict()
 
 
-def describe_table(table: str, instance_id: str | None = None) -> dict:
+def describe_table(
+    table: str, instance_id: str | None = None, api_key: str | None = None
+) -> dict:
     try:
+        principal = authorize(api_key, ["r"])
         _logger.info(
             "describe_table received",
-            extra={"instance_id": instance_id or "default", "table": table},
+            extra={
+                "instance_id": instance_id or "default",
+                "table": table,
+                "principal": principal.username,
+            },
         )
         context = _registry.get(instance_id)
         table_names = context.db.list_tables()
@@ -88,6 +102,7 @@ def describe_table(table: str, instance_id: str | None = None) -> dict:
                 "instance_id": context.config.instance_id,
                 "table": normalized,
                 "column_count": len(columns),
+                "principal": principal.username,
             },
         )
         return {"columns": columns}
@@ -97,6 +112,7 @@ def describe_table(table: str, instance_id: str | None = None) -> dict:
             extra={
                 "instance_id": instance_id or "default",
                 "table": table,
+                "principal": principal.username if 'principal' in locals() else "anonymous",
                 "error_type": exc.error_type,
                 "error_message": exc.message,
             },

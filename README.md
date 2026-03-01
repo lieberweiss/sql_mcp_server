@@ -137,6 +137,7 @@ The examples below use the "module" entrypoint (Option 2):
 - `ENABLE_QUERY_LOGS` (optional, default: `false`; when enabled, SQL metadata is logged to `logs/queries.log` with daily rotation)
 - `LOG_QUERY_BODIES` (optional, default: `false`; when `true`, full SQL text is logged in addition to the hashed metadata—keep disabled in production)
 - `SQL_MCP_LOG_LEVEL` (optional, default: `INFO`; override to reduce verbosity in production, e.g. `WARNING`)
+- `tokens.txt` (project root) stores one `username:token:scopes` entry per line; scopes accept `r`, `w`, `a`, `d`.
 
 ### SQLite (Windsurf)
 
@@ -288,8 +289,16 @@ When embedding the server, call `sql_mcp_server.instances.shutdown_instance_regi
 ### Logging & privacy
 
 - Log files live in `logs/` and are rotated daily; they are created with `0600` permissions to avoid accidental exposure.
-- Query logs store only query length and a SHA-256 hash by défaut; enable them via `ENABLE_QUERY_LOGS=true`, puis activez `LOG_QUERY_BODIES=true` uniquement si nécessaire pour le débogage.
-- Ajustez `SQL_MCP_LOG_LEVEL` pour limiter la verbosité en production.
+- Query logs store only query length and a SHA-256 hash by default; enable them via `ENABLE_QUERY_LOGS=true`, then turn on `LOG_QUERY_BODIES=true` only if you genuinely need the raw SQL for debugging.
+- Adjust `SQL_MCP_LOG_LEVEL` to reduce verbosity in production.
+
+### Authentication (API keys)
+
+- Enable authentication by providing a `tokens.txt` file (by default located at the project root) with one `username:token:scopes` line per user.
+- `list_tables` and `describe_table` require the `r` scope.
+- `run_select` requires `r`. `run_query` requires `w` and will also demand `a`/`d` whenever the statement contains ALTER or DROP operations allowed by the instance config.
+- Pass the token through the `api_key` parameter of each MCP tool call (or define `MCP_TOKEN` in the client environment so FastMCP injects it automatically).
+- Use `python scripts/generate_api_key.py <username> --scopes rwad` to append entries to `tokens.txt` (use `--file` to target another file or `--stdout` to print without writing). Remove a user with `python scripts/remove_api_key.py <username>`.
 
 ## Security notes
 
