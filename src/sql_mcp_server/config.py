@@ -23,6 +23,7 @@ class ServerConfig:
     server_name: str
     mssql_odbc_driver: str | None
     mssql_trust_server_certificate: bool
+    allow_alter: bool
 
     @property
     def statement_timeout_seconds(self) -> int | None:
@@ -104,6 +105,7 @@ def load_config(
         mssql_trust_server_certificate=_get_bool(
             "DB_MSSQL_TRUST_SERVER_CERTIFICATE", False
         ),
+        allow_alter=_get_bool("DB_ALLOW_ALTER", False),
     )
 
 

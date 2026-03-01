@@ -77,7 +77,10 @@ class SQLValidator:
 
     def _check_forbidden_keywords(self, query: str) -> None:
         upper = query.upper()
-        for kw in FORBIDDEN_KEYWORDS:
+        forbidden = set(FORBIDDEN_KEYWORDS)
+        if self._config.allow_alter:
+            forbidden.discard("ALTER")
+        for kw in forbidden:
             if kw in upper:
                 raise MCPError(
                     f"Forbidden SQL keyword detected: {kw}",
