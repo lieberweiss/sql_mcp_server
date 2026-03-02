@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import sys
 import os
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
@@ -117,7 +118,7 @@ def setup_logging(level: int | None = None) -> logging.Logger:
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    stream_handler = logging.StreamHandler()
+    stream_handler = logging.StreamHandler(stream=sys.stderr)
     stream_handler.setFormatter(formatter)
     logger.addHandler(stream_handler)
 
